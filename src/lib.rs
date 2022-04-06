@@ -1,4 +1,4 @@
-//#![no_std]
+#![no_std]
 
 #[repr(C)]
 #[derive(Default, Debug)]
