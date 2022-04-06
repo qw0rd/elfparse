@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 
 #[repr(C)]
 #[derive(Default, Debug)]
@@ -164,10 +164,37 @@ impl<'a> Iterator for SectionIter<'a> {
     }
 }
 
+#[repr(C)]
+#[derive(Debug)]
+pub struct ElfSymbol {
+    st_name: u32,
+    st_info: u8,
+    st_other: u8,
+    st_shndx: u16,
+    st_value: u64,
+    st_size: u64
+}
+
 #[derive(Debug)]
 pub struct ElfFile<'a> {
     pub header: ElfHeader,
     data: &'a [u8],
+}
+
+pub struct SymbolIter<'a> {
+    start: &'a [u8],
+    current: usize,
+    total: usize,
+}
+
+impl<'a> Iterator for SymbolIter<'a> {
+    type Item = ElfSymbol;
+
+    fn next(&mut self) -> Option<Self::Item> {
+
+
+        None
+    }
 }
 
 impl<'a> ElfFile<'a> {
@@ -194,5 +221,36 @@ impl<'a> ElfFile<'a> {
         }
 
         Some(core::str::from_utf8(&self.data[name_at..cur]).unwrap())
+    }
+
+    pub fn lookup_section(&self, name: &str) -> Option<ElfSection> {
+        self.sections().filter(|sec| {
+            let _n = self.section_name(sec).unwrap();
+            if _n == name {
+                true
+            } else {
+                false
+            }
+        }).nth(0)
+    }
+
+    pub fn symbol_table(&self) -> SymbolIter {
+        let mut sym_sec = ElfSection::default();
+
+        for sec in self.sections() {
+            let name = self.section_name(&sec).unwrap();
+            if name == ".symtab" {
+                sym_sec = sec;
+            }
+        }
+
+        let num_entries = sym_sec.sh_size / sym_sec.sh_entsize;
+        let str_sec = self.sections().nth(sym_sec.sh_link as usize).unwrap();
+
+        SymbolIter {
+            start: &self.data[sym_sec.sh_offset as usize..],
+            current: 0,
+            total: num_entries as usize
+        }
     }
 }
