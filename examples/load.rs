@@ -1,6 +1,5 @@
-
-use std::fs;
 use libc;
+use std::fs;
 
 fn main() {
     let data = fs::read("a.out").unwrap();
@@ -10,11 +9,14 @@ fn main() {
     println!("{:?}", text);
 
     let _ptr = unsafe {
-        libc::mmap(core::ptr::null_mut(),
-        4096,
-        libc::PROT_READ | libc::PROT_WRITE | libc::PROT_EXEC, 
-        libc::MAP_PRIVATE | libc::MAP_ANON,
-        -1,0)
+        libc::mmap(
+            core::ptr::null_mut(),
+            4096,
+            libc::PROT_READ | libc::PROT_WRITE | libc::PROT_EXEC,
+            libc::MAP_PRIVATE | libc::MAP_ANON,
+            -1,
+            0,
+        )
     };
 
     let ptr = unsafe { core::slice::from_raw_parts_mut(_ptr as *mut u8, 4096) };
@@ -26,9 +28,9 @@ fn main() {
     }
 
     let addr = (_ptr as usize) + (info.header.e_entry - (text.sh_offset as usize));
-    let func = unsafe { core::mem::transmute::<usize, GG>(addr) } ;
+    let func = unsafe { core::mem::transmute::<usize, GG>(addr) };
     let res = func();
-    println!("{}", res);
+    println!("The function returned: {}", res);
 }
 
-type GG = extern fn() -> i32;
+type GG = extern "C" fn() -> i32;
